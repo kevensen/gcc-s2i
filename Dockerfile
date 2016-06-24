@@ -38,6 +38,7 @@ RUN yum clean all -y && \
         pulseaudio-libs-devel  \
         tar                    \
         terminus-fonts         \
+	uuid                   \
         uuid-devel             && \
     yum clean all -y && \
     rm -rf /var/cache/yum/*

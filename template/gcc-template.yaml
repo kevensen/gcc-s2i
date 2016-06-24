@@ -7,13 +7,13 @@ metadata:
     description: Build GCC Application
     iconClass: icon-shadowman
     tags: gcc
-  creationTimestamp: null
   name: gcc
+  namespace: openshift
 objects:
 - apiVersion: "v1"
   kind: "ImageStream"
   metadata:
-    name: ${APP_NAME}:latest
+    name: ${APP_NAME}
 
 - apiVersion: v1
   kind: Service
@@ -44,23 +44,24 @@ objects:
         ref: ${GCC_REPOSITORY_REF}
         uri: ${GCC_REPOSITORY_URL}
       type: Git
-    sourceStrategy:
-      forcePull: true
-      from:
-        kind: ImageStreamTag
-        name: gcc-builder:latest
-        namespace: openshift
-      type: Source
-    triggers:
-    - github:
-        secret: ${GCC_GITHUB_WEBHOOK_SECRET}
-      type: GitHub
-    - generic:
+    strategy:
+      sourceStrategy:
+        forcePull: true
+        from:
+          kind: ImageStreamTag
+          name: gcc-builder:latest
+          namespace: openshift
+        type: Source
+      triggers:
+      - github:
+          secret: ${GCC_GITHUB_WEBHOOK_SECRET}
+        type: GitHub
+      - generic:
         secret: ${GCC_GENERIC_WEBHOOK_SECRET}
-      type: Generic
-    - imageChange: {}
-      type: ImageChange
-    - type: ConfigChange
+        type: Generic
+      - imageChange: {}
+        type: ImageChange
+      - type: ConfigChange
 
 - apiVersion: v1
   kind: DeploymentConfig
@@ -86,6 +87,11 @@ objects:
           ports:
           - containerPort: 8080
             protocol: TCP
+          env:
+          - name: APP_CMD
+            value: ${APP_CMD}
+          - name: APP_ARGS
+            value: ${APP_ARGS}
     triggers:
     - type: ConfigChange
     - imageChangeParams:
@@ -102,6 +108,20 @@ parameters:
   displayName: Application Name
   required: true
   name: APP_NAME
+- description: The git repository containing the application source code
+  displayName: gcc git Repository
+  name: GCC_REPOSITORY_URL
+  required: true
+- description: Set this to a branch name, tag or other ref of your repository if you are not using the default branch
+  displayName: gcc Source Branch
+  name: GCC_REPOSITORY_REF
+  value: master
+  required: true
+- description: Set this to the subdirectory containing the Dockerfile if it is not in the main directory
+  displayName: gcc Source Context Directory
+  name: GCC_CONTEXT_DIR
+  value: /
+  required: true
 - description: A secret string used to configure the GitHub webhook.
   displayName: gcc Source GitHub Webhook Secret
   from: '[a-zA-Z0-9]{40}'
@@ -112,14 +132,11 @@ parameters:
   from: '[a-zA-Z0-9]{40}'
   generate: expression
   name: GCC_GENERIC_WEBHOOK_SECRET
-- description: Set this to a branch name, tag or other ref of your repository if you
-    are not using the default branch
-  displayName: gcc Source Branch
-  name: GCC_REPOSITORY_REF
-  value: master
+- description: The application executable
+  displayName: Application Executable
+  name: APP_CMD
   required: true
-- description: Set this to the subdirectory containing the Dockerfile if it is not in the main directory
-  displayName: gcc Source Context Directory
-  name: GCC_CONTEXT_DIR
-  value: /
-  required: true
+- description: The application arguments
+  displayName: Application arguments
+  name: APP_ARGS
+  required: false
