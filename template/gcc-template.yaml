@@ -1,0 +1,125 @@
+apiVersion: v1
+kind: Template
+labels:
+  template: GCC
+metadata:
+  annotations:
+    description: Build GCC Application
+    iconClass: icon-shadowman
+    tags: gcc
+  creationTimestamp: null
+  name: gcc
+objects:
+- apiVersion: "v1"
+  kind: "ImageStream"
+  metadata:
+    name: ${APP_NAME}:latest
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: ${APP_NAME}-service
+  spec:
+    ports:
+    - port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      name: ${APP_NAME}
+
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    annotations:
+      description: Defines how to build the application
+    name: ${APP_NAME}-build
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: ${APP_NAME}:latest
+    source:
+      contextDir: ${GCC_CONTEXT_DIR}
+      git:
+        ref: ${GCC_REPOSITORY_REF}
+        uri: ${GCC_REPOSITORY_URL}
+      type: Git
+    sourceStrategy:
+      forcePull: true
+      from:
+        kind: ImageStreamTag
+        name: gcc-builder:latest
+        namespace: openshift
+      type: Source
+    triggers:
+    - github:
+        secret: ${GCC_GITHUB_WEBHOOK_SECRET}
+      type: GitHub
+    - generic:
+        secret: ${GCC_GENERIC_WEBHOOK_SECRET}
+      type: Generic
+    - imageChange: {}
+      type: ImageChange
+    - type: ConfigChange
+
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      description: Defines how to deploy the application server
+    name: ${APP_NAME}-deployer
+  spec:
+    replicas: 1
+    selector:
+      name: ${APP_NAME}
+    strategy:
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          name: ${APP_NAME}
+        name: ${APP_NAME}
+      spec:
+        containers:
+        - image: ${APP_NAME}:latest
+          name: ${APP_NAME}
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - ${APP_NAME}
+        from:
+          kind: ImageStreamTag
+          name: ${APP_NAME}:latest
+      type: ImageChange
+
+parameters:
+- description: A name for your application
+  displayName: Application Name
+  required: true
+  name: APP_NAME
+- description: A secret string used to configure the GitHub webhook.
+  displayName: gcc Source GitHub Webhook Secret
+  from: '[a-zA-Z0-9]{40}'
+  generate: expression
+  name: GCC_GITHUB_WEBHOOK_SECRET
+- description: A secret string used to configure the generic webhook.
+  displayName: gcc Source Generic Webhook Secret
+  from: '[a-zA-Z0-9]{40}'
+  generate: expression
+  name: GCC_GENERIC_WEBHOOK_SECRET
+- description: Set this to a branch name, tag or other ref of your repository if you
+    are not using the default branch
+  displayName: gcc Source Branch
+  name: GCC_REPOSITORY_REF
+  value: master
+  required: true
+- description: Set this to the subdirectory containing the Dockerfile if it is not in the main directory
+  displayName: gcc Source Context Directory
+  name: GCC_CONTEXT_DIR
+  value: /
+  required: true
