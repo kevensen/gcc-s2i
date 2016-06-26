@@ -27,19 +27,18 @@ RUN yum clean all -y && \
         libjpeg-turbo-devel    \
         libssh2-devel          \
         liberation-mono-fonts  \
+        libpng-devel           \
         libtelnet-devel        \
         libtool                \
         libvorbis-devel        \
         libvncserver-devel     \
         libwebp-devel          \
         make                   \
-        openssl		       \
+        openssl                \
         pango-devel            \
         pulseaudio-libs-devel  \
         tar                    \
-        terminus-fonts         \
-	uuid                   \
-        uuid-devel             && \
+        uuid-devel          && \
     yum clean all -y && \
     rm -rf /var/cache/yum/*
          
@@ -52,18 +51,9 @@ RUN mkdir /opt/app-root && \
     chmod g+w /usr/local/share/man/man{5,8} 
 
 WORKDIR ${HOME}
-USER 1001
 EXPOSE 8080
 EXPOSE 4822
 
-# TODO: Drop the root user and make the content of /opt/app-root owned by user 1001
-# RUN chown -R 1001:1001 /opt/app-root
-
-# This default user is created in the openshift/base-centos7 image
 USER 1001
 
-# TODO: Set the default port for applications built using this image
-# EXPOSE 8080
-
-# TODO: Set the default CMD for the image
 # CMD ["usage"]

@@ -52,16 +52,15 @@ objects:
           name: gcc-builder:latest
           namespace: openshift
         type: Source
-      triggers:
-      - github:
-          secret: ${GCC_GITHUB_WEBHOOK_SECRET}
-        type: GitHub
-      - generic:
+    triggers:
+    - github:
+        secret: ${GCC_GITHUB_WEBHOOK_SECRET}
+      type: GitHub
+    - generic:
         secret: ${GCC_GENERIC_WEBHOOK_SECRET}
-        type: Generic
-      - imageChange: {}
-        type: ImageChange
-      - type: ConfigChange
+      type: Generic
+    - type: ImageChange
+    - type: ConfigChange
 
 - apiVersion: v1
   kind: DeploymentConfig
