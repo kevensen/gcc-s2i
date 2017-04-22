@@ -22,7 +22,7 @@ if [ -f ./configure.ac ]; then
 fi
 
 if [ -f ./configure ]; then
-    ./configure
+    ./configure --with-init-dir=/etc/init.d
 fi
 
 echo "---> Executing make..."
@@ -32,3 +32,9 @@ make
 echo "---> Executing make install..."
 make install
 
+
+echo "---> Executing ldconfig"
+ldconfig -v
+
+
+echo "---> done!"

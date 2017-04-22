@@ -1,4 +1,3 @@
-
 # gcc-s2i
 FROM centos:centos7
 
@@ -47,7 +46,10 @@ COPY ./.s2i/bin/ /usr/local/s2i
 RUN mkdir /opt/app-root && \
     useradd -u 1001 -r -g 0 -d ${HOME} -s /sbin/nologin -c "Default Application User" default && \
     chown -R 1001:0 $HOME && chmod -R og+rwx ${HOME} && \
-    chmod g+w /usr/local/{lib,include,sbin} && \
+    chown -R 1001:0 /usr/local/s2i && chmod -R 777 /usr/local/s2i && \
+    chmod g+w /usr/local/{lib,include,sbin,s2i} && \
+    chmod g+w /etc/init.d/ && \
+    chmod g+w /etc/ && \
     chmod g+w /usr/local/share/man/man{5,8} 
 
 WORKDIR ${HOME}
@@ -55,5 +57,3 @@ EXPOSE 8080
 EXPOSE 4822
 
 USER 1001
-
-# CMD ["usage"]

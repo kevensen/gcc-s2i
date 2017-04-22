@@ -13,6 +13,10 @@ objects:
 - apiVersion: "v1"
   kind: "ImageStream"
   metadata:
+    name: gcc-builder
+- apiVersion: "v1"
+  kind: "ImageStream"
+  metadata:
     name: ${APP_NAME}
 
 - apiVersion: v1
@@ -24,9 +28,34 @@ objects:
     - port: 8080
       protocol: TCP
       targetPort: 8080
+      name: http
+    - port: 4822
+      protocol: TCP
+      targetPort: 4822
+      name: supplemental
     selector:
       name: ${APP_NAME}
-
+- apiVersion: "v1"
+  kind: "BuildConfig"
+  metadata:
+    name: "gcc-builder"
+  spec:
+    output:
+      to:
+        kind: "ImageStreamTag"
+        name: "gcc-builder:latest"
+    source:
+      git:
+        uri: ${BUILDER_URL}
+        ref: ${BUILDER_REF}
+      contextDir: ${BUILDER_CONTEXT_DIR}
+      type: "Git"
+    strategy:
+      type: "Docker"
+      dockerStrategy:
+        dockerfilePath: ${BUILDER_DOCKERFILE_PATH}
+    triggers:
+    - type: ConfigChange
 - apiVersion: v1
   kind: BuildConfig
   metadata:
@@ -50,7 +79,6 @@ objects:
         from:
           kind: ImageStreamTag
           name: gcc-builder:latest
-          namespace: openshift
         type: Source
     triggers:
     - github:
@@ -86,6 +114,8 @@ objects:
           ports:
           - containerPort: 8080
             protocol: TCP
+          - containerPort: 4822
+            protocol: TCP
           env:
           - name: APP_CMD
             value: ${APP_CMD}
@@ -107,6 +137,26 @@ parameters:
   displayName: Application Name
   required: true
   name: APP_NAME
+- description: The git repository containing the gcc builder
+  displayName: gcc Builder URL
+  name: BUILDER_URL
+  required: true
+  value: https://github.com/kevensen/gcc-s2i
+- description: The gcc builder repsitory branch
+  displayName: gcc Builder Branch
+  name: BUILDER_REF
+  required: true
+  value: master
+- description: The gcc builder context directory
+  displayName: gcc Builder Context Directory
+  name: BUILDER_CONTEXT_DIR
+  required: true
+  value: /
+- description: The gcc builder Dockerfile path
+  displayName: gcc Builder Dockerfile Path
+  name: BUILDER_DOCKERFILE_PATH
+  requred: true
+  value: Dockerfile.rhel7
 - description: The git repository containing the application source code
   displayName: gcc git Repository
   name: GCC_REPOSITORY_URL
